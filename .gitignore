@@ -1,0 +1,7 @@
+build/
+sources/
+downloads/
+sstate-cache/
+*.wic
+*.wic.bz2
+*.wic.xz

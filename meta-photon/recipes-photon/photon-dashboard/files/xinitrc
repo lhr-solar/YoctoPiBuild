@@ -1,0 +1,8 @@
+#!/bin/sh
+# Disable screen blanking
+xset s off
+xset -dpms
+xset s noblank
+
+# Launch dashboard fullscreen
+exec /usr/bin/DashboardOnly

@@ -1,0 +1,73 @@
+header:
+  version: 14
+
+machine: raspberrypicm4-io
+distro: poky
+target: photon-image
+
+repos:
+  poky:
+    url: https://git.yoctoproject.org/git/poky
+    branch: scarthgap
+    path: sources/poky
+
+  meta-raspberrypi:
+    url: https://git.yoctoproject.org/git/meta-raspberrypi
+    branch: scarthgap
+    path: sources/meta-raspberrypi
+
+  meta-openembedded:
+    url: https://github.com/openembedded/meta-openembedded
+    branch: scarthgap
+    path: sources/meta-openembedded
+    layers:
+      meta-oe:
+      meta-python:
+      meta-networking:
+      meta-multimedia:
+
+  meta-photon:
+    path: meta-photon    # local layer, no url
+
+bblayers_conf_header:
+  standard: |
+    BBLAYERS ?= ""
+
+local_conf_header:
+  standard: |
+    # Machine / Distro
+    MACHINE ??= "raspberrypicm4-io"
+    DISTRO ?= "poky"
+
+    # Packaging
+    PACKAGE_CLASSES ?= "package_ipk"
+
+    # Parallel build — adjust to your WSL2 CPU count
+    BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()}"
+    PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()}"
+
+    # Downloads / sstate cache
+    DL_DIR ?= "${TOPDIR}/../downloads"
+    SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
+
+    # Vulkan via Mesa v3dv (VideoCore VI on CM4)
+    PACKAGECONFIG:append:pn-mesa = " v3d vulkan"
+    DISTRO_FEATURES:append = " opengl vulkan"
+
+    # X11 stack
+    DISTRO_FEATURES:append = " x11"
+
+    # Systemd as init
+    DISTRO_FEATURES:append = " systemd"
+    VIRTUAL-RUNTIME_init_manager = "systemd"
+    DISTRO_FEATURES_BACKFILL_CONSIDERED:append = " sysvinit"
+    VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
+
+    # Enable V4L2 kernel camera support
+    KERNEL_EXTRA_FEATURES:append = " features/media/media.cfg"
+
+    # Raspberry Pi GPU memory split (MB allocated to GPU)
+    GPU_MEM = "128"
+
+    # Extra image space (MB)
+    IMAGE_ROOTFS_EXTRA_SPACE = "2048000"

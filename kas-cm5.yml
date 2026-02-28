@@ -1,0 +1,12 @@
+header:
+  version: 14
+
+# Include base config and override machine only
+includes:
+  - kas.yml
+
+machine: raspberrypicm5
+
+# NOTE: If raspberrypicm5 is not in meta-raspberrypi scarthgap branch,
+# change meta-raspberrypi branch to 'styhead' and update poky + meta-oe to match.
+# Command: kas build kas-cm5.yml
