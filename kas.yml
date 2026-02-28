@@ -1,7 +1,7 @@
 header:
   version: 14
 
-machine: raspberrypicm4-io
+machine: raspberrypi4-64
 distro: poky
 target: photon-image
 
@@ -10,6 +10,10 @@ repos:
     url: https://git.yoctoproject.org/git/poky
     branch: scarthgap
     path: sources/poky
+    layers:
+      meta:
+      meta-poky:
+      meta-yocto-bsp:
 
   meta-raspberrypi:
     url: https://git.yoctoproject.org/git/meta-raspberrypi
@@ -32,7 +36,7 @@ repos:
 local_conf_header:
   standard: |
     # Machine / Distro
-    MACHINE ??= "raspberrypicm4-io"
+    MACHINE ??= "raspberrypi4-64"
     DISTRO ?= "poky"
 
     # Packaging
@@ -54,13 +58,16 @@ local_conf_header:
     DISTRO_FEATURES:append = " x11"
 
     # Systemd as init
-    DISTRO_FEATURES:append = " systemd"
+    DISTRO_FEATURES:append = " systemd usrmerge"
     VIRTUAL-RUNTIME_init_manager = "systemd"
     DISTRO_FEATURES_BACKFILL_CONSIDERED:append = " sysvinit"
     VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 
     # Enable V4L2 kernel camera support
     KERNEL_EXTRA_FEATURES:append = " features/media/media.cfg"
+
+    # Accept restricted licenses for Raspberry Pi firmware
+    LICENSE_FLAGS_ACCEPTED:append = " synaptics-killswitch"
 
     # Raspberry Pi GPU memory split (MB allocated to GPU)
     GPU_MEM = "128"

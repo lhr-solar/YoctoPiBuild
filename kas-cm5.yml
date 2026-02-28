@@ -5,7 +5,7 @@ header:
 includes:
   - kas.yml
 
-machine: raspberrypicm5
+machine: raspberrypi-cm5-io-board
 
 # NOTE: If raspberrypicm5 is not in meta-raspberrypi scarthgap branch,
 # change meta-raspberrypi branch to 'styhead' and update poky + meta-oe to match.

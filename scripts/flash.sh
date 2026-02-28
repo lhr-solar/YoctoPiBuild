@@ -3,7 +3,7 @@
 # Usage: ./scripts/flash.sh /dev/sdX
 set -euo pipefail
 
-IMAGE_DIR="build/tmp/deploy/images/raspberrypicm4-io"
+IMAGE_DIR="build/tmp/deploy/images/raspberrypi4-64"
 IMAGE=$(ls "${IMAGE_DIR}"/*.wic.bz2 | tail -1)
 TARGET="${1:?Usage: flash.sh /dev/sdX}"
 
