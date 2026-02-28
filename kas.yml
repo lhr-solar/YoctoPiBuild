@@ -29,10 +29,6 @@ repos:
   meta-photon:
     path: meta-photon    # local layer, no url
 
-bblayers_conf_header:
-  standard: |
-    BBLAYERS ?= ""
-
 local_conf_header:
   standard: |
     # Machine / Distro
