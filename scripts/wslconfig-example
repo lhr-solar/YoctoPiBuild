@@ -1,0 +1,31 @@
+# WSL2 Performance Configuration for Yocto Builds
+# ─────────────────────────────────────────────────
+# Copy this file to:  C:\Users\<YourUsername>\.wslconfig
+# Then restart WSL:   wsl --shutdown && wsl
+#
+# By default, WSL2 only gets ~50% of your RAM and a subset of CPUs.
+# This config gives it everything.
+
+[wsl2]
+# Use ALL processor cores
+processors=0
+
+# Give WSL2 the vast majority of your RAM.
+# Adjust this to your total RAM minus ~2-4 GB for Windows.
+# Examples:
+#   16 GB total → memory=12GB
+#   32 GB total → memory=28GB
+#   64 GB total → memory=58GB
+memory=28GB
+
+# Swap space — helpful for large Yocto builds (set to 2× leftover RAM or at least 16GB)
+swap=16GB
+
+# Store the swap file on a fast drive
+swapFile=C:\\temp\\wsl-swap.vhdx
+
+# Disable page reporting so WSL keeps memory instead of returning it to Windows
+pageReporting=false
+
+# Enable nested virtualization (harmless, sometimes helps)
+nestedVirtualization=true

@@ -42,9 +42,27 @@ local_conf_header:
     # Packaging
     PACKAGE_CLASSES ?= "package_ipk"
 
-    # Parallel build — adjust to your WSL2 CPU count
-    BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()}"
-    PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()}"
+    # ── Maximum Performance Tuning ──────────────────────────────
+    # BitBake tasks: 1.5× CPU count (many tasks are I/O-bound, not CPU-bound)
+    BB_NUMBER_THREADS ?= "${@int(oe.utils.cpu_count() * 1.5)}"
+    # Make parallelism: 2× CPU count (gcc/ld scale well with more jobs)
+    PARALLEL_MAKE ?= "-j ${@int(oe.utils.cpu_count() * 2)}"
+
+    # PSI-based auto-throttle (scarthgap+): only back off when the system
+    # is genuinely under pressure — lets you run hotter without OOM kills.
+    # Values are percentages (0-100). Higher = more aggressive.
+    BB_PRESSURE_MAX_MEMORY ?= "90"
+    BB_PRESSURE_MAX_IO ?= "90"
+    BB_PRESSURE_MAX_CPU ?= "100"
+
+    # Remove work dirs after each recipe finishes — saves 40-80 GB of disk
+    # I/O and storage.  Disable this if you need to inspect build artifacts.
+    INHERIT += "rm_work"
+    # Keep work dirs for your own layer so you can debug it easily
+    RM_WORK_EXCLUDE += "photon-image"
+
+    # Skip generating mirror tarballs (saves time + disk)
+    BB_GENERATE_MIRROR_TARBALLS = "0"
 
     # Downloads / sstate cache
     DL_DIR ?= "${TOPDIR}/../downloads"
