@@ -72,5 +72,5 @@ local_conf_header:
     # Raspberry Pi GPU memory split (MB allocated to GPU)
     GPU_MEM = "128"
 
-    # Extra image space (MB)
+    # Extra image space (KB) — set to ~2GB
     IMAGE_ROOTFS_EXTRA_SPACE = "2048000"

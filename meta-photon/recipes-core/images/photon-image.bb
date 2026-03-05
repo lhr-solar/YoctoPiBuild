@@ -1,6 +1,6 @@
 SUMMARY = "Photon Dashboard kiosk image for Raspberry Pi"
 
-inherit core-image
+inherit core-image testimage
 
 # Base features
 IMAGE_FEATURES += " \
@@ -39,3 +39,6 @@ IMAGE_INSTALL:append = " \
 # Image format: .wic for direct SD/eMMC flash
 IMAGE_FSTYPES = "wic wic.bz2 ext4"
 WKS_FILE = "sdimage-raspberrypi.wks"
+
+# Runtime testing
+TEST_SUITES:append = " photon"

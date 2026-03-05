@@ -14,7 +14,7 @@ sudo apt-get install -y \
 sudo locale-gen en_US.UTF-8
 
 echo "=== Installing kas ==="
-pip3 install --user kas
+pip3 install --user kas --break-system-packages
 
 echo "=== Done. Add ~/.local/bin to PATH if not already present ==="
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
