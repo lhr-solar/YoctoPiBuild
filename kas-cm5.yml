@@ -1,12 +1,10 @@
 header:
   version: 14
 
-# Include base config and override machine only
-includes:
-  - kas.yml
-
+# Override machine for CM5
+# Usage: kas build kas.yml:kas-cm5.yml
 machine: raspberrypi-cm5-io-board
 
-# NOTE: If raspberrypicm5 is not in meta-raspberrypi scarthgap branch,
-# change meta-raspberrypi branch to 'styhead' and update poky + meta-oe to match.
-# Command: kas build kas-cm5.yml
+# NOTE: If raspberrypi-cm5-io-board is not in meta-raspberrypi scarthgap branch,
+# change meta-raspberrypi branch to 'styhead' and update poky + meta-oe to match,
+# or use 'raspberrypi5' as the machine (same BCM2712 SoC).

@@ -16,16 +16,13 @@ processors=0
 #   16 GB total → memory=12GB
 #   32 GB total → memory=28GB
 #   64 GB total → memory=58GB
-memory=28GB
+memory=12GB
 
-# Swap space — helpful for large Yocto builds (set to 2× leftover RAM or at least 16GB)
-swap=16GB
+# Swap space — helpful for large Yocto builds
+swap=8GB
 
-# Store the swap file on a fast drive
-swapFile=C:\\temp\\wsl-swap.vhdx
-
-# Disable page reporting so WSL keeps memory instead of returning it to Windows
-pageReporting=false
+# Store the swap file on a fast drive (must be an existing directory)
+swapFile=C:\\Users\\alper\\wsl-swap.vhdx
 
 # Enable nested virtualization (harmless, sometimes helps)
 nestedVirtualization=true
