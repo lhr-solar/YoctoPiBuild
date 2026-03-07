@@ -30,6 +30,8 @@ IMAGE_INSTALL:append = " \
     \
     can-utils \
     \
+    vulkan-tools \
+    \
     iproute2 \
     wpa-supplicant \
     \

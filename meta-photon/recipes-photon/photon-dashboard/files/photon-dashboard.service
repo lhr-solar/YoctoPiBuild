@@ -1,15 +1,14 @@
 [Unit]
 Description=Photon Dashboard
-After=graphical.target
+After=multi-user.target
 
 [Service]
 Type=simple
 User=root
-Environment=DISPLAY=:0
-ExecStartPre=/usr/bin/startx /root/.xinitrc -- :0 vt1 &
-ExecStart=/usr/bin/startx /root/.xinitrc -- :0 vt1
+Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
+ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1
 Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=graphical.target
+WantedBy=multi-user.target
