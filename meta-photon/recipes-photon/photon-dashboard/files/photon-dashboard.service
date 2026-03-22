@@ -1,11 +1,12 @@
 [Unit]
 Description=Photon Dashboard
-After=multi-user.target
+After=systemd-user-sessions.service
 
 [Service]
 Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
+WorkingDirectory=/root
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1
 Restart=on-failure
 RestartSec=5

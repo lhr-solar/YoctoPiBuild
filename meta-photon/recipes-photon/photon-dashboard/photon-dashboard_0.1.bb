@@ -46,10 +46,16 @@ SRC_URI += " \
     file://xinitrc \
 "
 
+
+
 do_install() {
     # Binary is at <build>/photon/DashboardOnly (CMake subdir output)
     install -d ${D}/usr/bin
     install -m 0755 ${B}/photon/DashboardOnly ${D}/usr/bin/DashboardOnly
+
+    # Satoshi font for dashboard UI
+    install -d ${D}/usr/share/fonts
+    install -m 0644 ${S}/fonts/Satoshi-Medium.ttf ${D}/usr/share/fonts/
 
     # Systemd unit
     install -d ${D}${systemd_system_unitdir}
@@ -63,6 +69,7 @@ do_install() {
 
 FILES:${PN} += " \
     /usr/bin/DashboardOnly \
+    /usr/share/fonts/Satoshi-Medium.ttf \
     ${systemd_system_unitdir}/photon-dashboard.service \
     /root/.xinitrc \
 "
