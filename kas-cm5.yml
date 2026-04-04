@@ -1,8 +1,9 @@
 header:
   version: 14
+  includes:
+    - kas.yml
 
 # Override machine for CM5
-# Usage: kas build kas.yml:kas-cm5.yml
 machine: raspberrypi-cm5-io-board
 
 # NOTE: If raspberrypi-cm5-io-board is not in meta-raspberrypi scarthgap branch,

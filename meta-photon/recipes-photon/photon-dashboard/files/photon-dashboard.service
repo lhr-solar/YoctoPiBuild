@@ -1,15 +1,18 @@
 [Unit]
 Description=Photon Dashboard
-After=systemd-user-sessions.service
+After=systemd-udev-trigger.service systemd-tmpfiles-setup.service
+Wants=systemd-tmpfiles-setup.service
+Conflicts=getty@tty1.service
+DefaultDependencies=no
 
 [Service]
 Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 WorkingDirectory=/root
-ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1
+ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=sysinit.target

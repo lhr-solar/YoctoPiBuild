@@ -35,6 +35,7 @@ DEPENDS = " \
 # in root CMakeLists.txt (checked via if(NOT WIN32)), so no extra flag needed.
 EXTRA_OECMAKE = " \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
 "
 
 # Systemd service

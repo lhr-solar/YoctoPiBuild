@@ -2,24 +2,21 @@ SUMMARY = "Photon Dashboard kiosk image for Raspberry Pi"
 
 inherit core-image testimage
 
-# Base features
-IMAGE_FEATURES += " \
-    ssh-server-openssh \
-    debug-tweaks \
-"
+# Keep developer conveniences opt-in so the default image boots leaner.
+PHOTON_IMAGE_FEATURES ?= ""
+IMAGE_FEATURES += " ${PHOTON_IMAGE_FEATURES}"
 
-# Core packages
+# Core packages (stripped for fastest boot)
 IMAGE_INSTALL:append = " \
     packagegroup-core-boot \
-    packagegroup-base \
-    kernel-modules \
-    \
+    openssh-sshd \
     vulkan-loader \
     mesa \
     mesa-vulkan-drivers \
     libgl-mesa \
     \
     xserver-xorg \
+    xserver-xorg-module-libwfb \
     xf86-video-modesetting \
     xf86-input-evdev \
     libxcb \
@@ -27,26 +24,21 @@ IMAGE_INSTALL:append = " \
     libxext \
     xinit \
     xauth \
-    xterm \
-    xset \
-    xrandr \
-    \
-    v4l-utils \
     \
     can-utils \
     \
-    vulkan-tools \
-    \
     iproute2 \
     wpa-supplicant \
-    avahi-daemon \
     linux-firmware-rpidistro-bcm43455 \
     \
     photon-dashboard \
 "
 
+# USB HID is typically built into linux-raspberrypi (no kernel-module-usbhid IPK);
+# opkg fails rootfs if IMAGE_INSTALL names a non-existent module package.
+
 # Image format: .wic for direct SD/eMMC flash
-IMAGE_FSTYPES = "wic wic.bz2 ext4"
+IMAGE_FSTYPES = "wic wic.bz2"
 WKS_FILE = "sdimage-raspberrypi.wks"
 
 # Static IP on eth0 for SSH over direct ethernet cable
@@ -61,21 +53,6 @@ ethernet_static_ip() {
 
 ROOTFS_POSTPROCESS_COMMAND += "ethernet_static_ip;"
 
-create_xorg_conf() {
-    install -d ${IMAGE_ROOTFS}${sysconfdir}/X11
-    printf 'Section "ServerFlags"\n    Option "AIGLX" "off"\nEndSection\n\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf
-    printf 'Section "Device"\n    Identifier "Card0"\n    Driver "modesetting"\n' \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf
-    printf '    Option "DRI" "3"\nEndSection\n\n' \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf
-    printf 'Section "Screen"\n    Identifier "Screen0"\n    Device "Card0"\nEndSection\n\n' \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf
-    printf 'Section "ServerLayout"\n    Identifier "Layout0"\n    Screen "Screen0"\nEndSection\n' \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf
-}
-
-ROOTFS_POSTPROCESS_COMMAND += "create_xorg_conf;"
 
 setup_wifi() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant
@@ -88,6 +65,7 @@ setup_wifi() {
     printf '[Match]\nName=wlan0\n\n[Network]\nDHCP=yes\n' \
         > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/30-wlan0-dhcp.network
 
+    # Keep Wi-Fi available, but let it start later than the early kiosk path.
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants
     ln -sf /lib/systemd/system/wpa_supplicant@.service \
         ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants/wpa_supplicant@wlan0.service
@@ -105,6 +83,111 @@ disable_suspend() {
 
 ROOTFS_POSTPROCESS_COMMAND += "disable_suspend;"
 
+disable_wait_online() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-networkd-wait-online.service
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "disable_wait_online;"
+
+disable_slow_services() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
+    # Bluetooth — not used by the dashboard
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/bluetooth.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/bluetooth.target
+    # Avahi (mDNS) — not needed for kiosk
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.socket
+    # USB gadget serial console — not needed
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/serial-getty@ttyGS0.service
+    # Journal flush — delays boot waiting for persistent journal
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-journal-flush.service
+    # Login tracking — not needed for kiosk
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-update-utmp.service
+    # Periodic cleanup timer — not needed at boot
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-tmpfiles-clean.timer
+    # SSH daemon — use socket activation instead (starts on first connection)
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/sshd.service
+    # Let xinit own tty1 without login prompt startup or VT handoff races.
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/autovt@tty1.service
+    # Telephony — not needed
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
+    # WiFi — keep installed but defer off boot path (start manually when needed)
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/wpa_supplicant@wlan0.service
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "disable_slow_services;"
+
+# SSH socket activation — zero boot cost, starts sshd on first connection
+setup_ssh_socket() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/sockets.target.wants
+    ln -sf /lib/systemd/system/sshd.socket \
+        ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/sockets.target.wants/sshd.socket
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_ssh_socket;"
+
+# Force Xorg to use vc4 display controller (card0) so it explicitly avoids the v3d chip
+setup_xorg_modesetting() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d
+    printf 'Section "Device"\n    Identifier "Card0"\n    Driver     "modesetting"\n    Option     "kmsdev" "/dev/dri/card0"\nEndSection\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d/10-modesetting.conf
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_xorg_modesetting;"
+
+# Disable MAC Randomization so the apartment network allows the connection
+setup_journald_volatile() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd
+    printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=16M\nForwardToSyslog=no\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/journald.conf
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_journald_volatile;"
+
+setup_persistent_mac() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
+    printf '[Match]\nOriginalName=*\n\n[Link]\nMACAddressPolicy=none\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/99-default.link
+}
+ROOTFS_POSTPROCESS_COMMAND += "setup_persistent_mac;"
+
+# Pre-configure WiFi so we can SSH immediately after flash
+setup_auto_wifi() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant
+    printf 'ctrl_interface=/var/run/wpa_supplicant\nupdate_config=1\nnetwork={\n    ssid="Texan-MyCampusNet-5G"\n    psk="Orange-Woodland-50$"\n}\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf
+    # Ensure systemd auto-starts wlan0
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants
+    ln -sf /lib/systemd/system/wpa_supplicant@.service ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants/wpa_supplicant@wlan0.service
+    
+    # Force systemd-networkd to ask for an IPv4 address
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
+    printf '[Match]\nName=wlan*\n\n[Network]\nDHCP=ipv4\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/80-wifi-dhcp.network
+}
+ROOTFS_POSTPROCESS_COMMAND += "setup_auto_wifi;"
+
+
+# Cleanup legacy boot files to shrink image and speed up firmware scanning.
+# Only CM5 specific files are kept.
+cleanup_boot_partition() {
+    # If the boot files are staged in the rootfs /boot directory
+    if [ -d ${IMAGE_ROOTFS}/boot/overlays ]; then
+        # Remove legacy Pi 3/4 firmware
+        rm -f ${IMAGE_ROOTFS}/boot/start*.elf
+        rm -f ${IMAGE_ROOTFS}/boot/fixup*.dat
+        rm -f ${IMAGE_ROOTFS}/boot/bootcode.bin
+        
+        # Remove unused DTBs (keeping only CM5 variants)
+        # We keep cm5 variants, remove the others
+        find ${IMAGE_ROOTFS}/boot/ -name "bcm2711-*.dtb" -delete
+        find ${IMAGE_ROOTFS}/boot/ -name "bcm28*.dtb" -delete
+        find ${IMAGE_ROOTFS}/boot/ -name "bcm270*.dtb" -delete
+    fi
+}
+ROOTFS_POSTPROCESS_COMMAND += "cleanup_boot_partition;"
 
 # Runtime testing
 TEST_SUITES:append = " photon"
