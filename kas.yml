@@ -96,11 +96,11 @@ local_conf_header:
     # Extra image space (KB) — ~64MB instead of 256MB to shrink image size
     IMAGE_ROOTFS_EXTRA_SPACE = "65536"
     
-    # Compress the kernel to reduce eMMC read time (~17MB saving)
-    KERNEL_IMAGETYPE = "Image.gz"
+    # LZ4 kernel: ~8% bigger than gzip but 58% faster decompression on ARM
+    KERNEL_IMAGETYPE = "Image.lz4"
 
-    # Optimize boot time (quiet, disable unnecessary consoles, bypass EDID gaps if possible)
-    CMDLINE:append = " quiet loglevel=3 logo.nologo console=tty3 vt.global_cursor_default=0 fsck.mode=skip systemd.show_status=false raid=noautodetect"
+    # Optimize boot time
+    CMDLINE:append = " quiet loglevel=3 logo.nologo console=tty3 vt.global_cursor_default=0 fsck.mode=skip systemd.show_status=false raid=noautodetect no_console_suspend usbcore.autosuspend=-1 nokaslr rootflags=noatime init=/opt/photon-init.sh"
 
     # Eliminate Raspberry Pi firmware boot delay (config.txt)
     DISABLE_SPLASH = "1"
@@ -108,7 +108,7 @@ local_conf_header:
     BOOT_DELAY_MS = "0"
     DISABLE_RPI_BOOT_LOGO = "1"
 
-    # Force max CPU clock permanently + disable unused hardware probes
+    # Force max CPU clock permanently + disable all unused hardware probes
     RPI_EXTRA_CONFIG = " \
     force_turbo=1 \
     hdmi_force_hotplug=1 \
@@ -116,12 +116,20 @@ local_conf_header:
     camera_auto_detect=0 \
     display_auto_detect=0 \
     dtparam=audio=off \
+    dtparam=i2c=off \
+    dtparam=spi=off \
     disable_poe_fan=1 \
     boot_delay=0 \
     dtparam=act_led_trigger=none \
     dtparam=pwr_led_trigger=none \
     disable_fw_kms_setup=1 \
     auto_initramfs=0 \
+    force_eeprom_read=0 \
+    hdmi_ignore_cec_init=1 \
+    disable_touchscreen=1 \
+    ignore_lcd=1 \
+    gpu_mem=128 \
+    initial_turbo=30 \
     "
 
     # Eliminate U-Boot overhead (Raspberry Pi can boot Linux directly from start.elf) 

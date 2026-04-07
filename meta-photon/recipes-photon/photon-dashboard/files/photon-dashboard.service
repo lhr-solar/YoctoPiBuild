@@ -1,7 +1,6 @@
 [Unit]
 Description=Photon Dashboard
-After=systemd-udev-trigger.service systemd-tmpfiles-setup.service
-Wants=systemd-tmpfiles-setup.service
+After=systemd-udev-trigger.service
 Conflicts=getty@tty1.service
 DefaultDependencies=no
 
@@ -12,7 +11,7 @@ Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aar
 WorkingDirectory=/root
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
-RestartSec=5
+RestartSec=2
 
 [Install]
 WantedBy=sysinit.target

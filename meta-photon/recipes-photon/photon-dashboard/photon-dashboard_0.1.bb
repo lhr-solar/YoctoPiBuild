@@ -45,6 +45,7 @@ SYSTEMD_AUTO_ENABLE = "enable"
 SRC_URI += " \
     file://photon-dashboard.service \
     file://xinitrc \
+    file://photon-init.sh \
 "
 
 
@@ -66,6 +67,10 @@ do_install() {
     # X11 kiosk launcher
     install -d ${D}/root
     install -m 0755 ${WORKDIR}/xinitrc ${D}/root/.xinitrc
+
+    # Custom fast-init script (kernel boots with init=/opt/photon-init.sh)
+    install -d ${D}/opt
+    install -m 0755 ${WORKDIR}/photon-init.sh ${D}/opt/photon-init.sh
 }
 
 FILES:${PN} += " \
@@ -73,6 +78,7 @@ FILES:${PN} += " \
     /usr/share/fonts/Satoshi-Medium.ttf \
     ${systemd_system_unitdir}/photon-dashboard.service \
     /root/.xinitrc \
+    /opt/photon-init.sh \
 "
 
 # NOTE: glslang-native may not exist in meta-oe scarthgap.

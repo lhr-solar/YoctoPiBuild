@@ -140,7 +140,7 @@ ROOTFS_POSTPROCESS_COMMAND += "setup_xorg_modesetting;"
 # Disable MAC Randomization so the apartment network allows the connection
 setup_journald_volatile() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd
-    printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=16M\nForwardToSyslog=no\n' \
+    printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=8M\nForwardToSyslog=no\n' \
         > ${IMAGE_ROOTFS}${sysconfdir}/systemd/journald.conf
 }
 
