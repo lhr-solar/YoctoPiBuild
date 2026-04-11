@@ -1,0 +1,44 @@
+# Photon fast-boot rpi-eeprom bootloader config for Raspberry Pi CM5
+#
+# The CM5 has a second-stage bootloader in SPI flash on the module.
+# It runs BEFORE start.elf reads config.txt, so none of the config.txt
+# tuning in kas.yml affects it. Its settings are persisted in SPI flash
+# and survive eMMC reflashes.
+#
+# Apply via:   scripts/flash-eeprom.sh   (run on target after first boot)
+#
+# Targeted settings:
+#
+#   BOOT_UART=0
+#       Stop emitting verbose UART boot messages. These take real time
+#       to transmit even if no UART cable is attached. Default: 1.
+#
+#   BOOT_ORDER=0xf1
+#       Try eMMC (SD path on CM5) first and last. The default (typically
+#       0xf461 or similar) scans SD -> NVMe -> USB -> restart with a
+#       short timeout on each, which adds visible delay on a board that
+#       only ever boots from eMMC.
+#
+#   WAKE_ON_GPIO=0
+#       Do not wait on GPIO 3 for a wake signal. On cold power-on this
+#       is already a near-noop but setting it explicitly removes any
+#       chance of wait-state.
+#
+#   POWER_OFF_ON_HALT=0
+#       Do not fully power off on halt; matters on reboot loops, not
+#       cold boot, but kept explicit.
+#
+#   PSU_MAX_CURRENT=5000
+#       Declare the PSU can source 5A so power-delivery negotiation
+#       doesn't stall on boot waiting to confirm current capability.
+#
+#   ENABLE_SELF_UPDATE=0
+#       Disable opportunistic bootloader self-update checks.
+
+[all]
+BOOT_UART=0
+BOOT_ORDER=0xf1
+WAKE_ON_GPIO=0
+POWER_OFF_ON_HALT=0
+PSU_MAX_CURRENT=5000
+ENABLE_SELF_UPDATE=0

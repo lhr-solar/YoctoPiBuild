@@ -96,11 +96,18 @@ local_conf_header:
     # Extra image space (KB) — ~64MB instead of 256MB to shrink image size
     IMAGE_ROOTFS_EXTRA_SPACE = "65536"
     
-    # LZ4 kernel: ~8% bigger than gzip but 58% faster decompression on ARM
-    KERNEL_IMAGETYPE = "Image.lz4"
+    # Must be Image.gz on Raspberry Pi 5 / CM5: the BCM2712 firmware
+    # bootloader decompresses gzip natively but has NO LZ4 support, so
+    # "Image.lz4" produces a boot partition the firmware cannot load from
+    # (blank HDMI, kernel never starts, USB HID never comes up). Despite
+    # the faster in-kernel decompress of LZ4, gz is the only option here
+    # without switching to U-Boot as an intermediate loader.
+    KERNEL_IMAGETYPE = "Image.gz"
 
-    # Optimize boot time
-    CMDLINE:append = " quiet loglevel=3 logo.nologo console=tty3 vt.global_cursor_default=0 fsck.mode=skip systemd.show_status=false raid=noautodetect no_console_suspend usbcore.autosuspend=-1 nokaslr rootflags=noatime init=/opt/photon-init.sh"
+    # Optimize boot time. cmdline.txt has no 80-char config.txt fragility.
+    # Pass-4 adds nokaslr. Still parked for pass 5 bisection:
+    #   rcupdate.rcu_expedited=1, rootflags=noatime.
+    CMDLINE:append = " quiet loglevel=3 logo.nologo console=tty3 vt.global_cursor_default=0 fsck.mode=skip systemd.show_status=false raid=noautodetect no_console_suspend usbcore.autosuspend=-1 udev.log_level=3 nokaslr"
 
     # Eliminate Raspberry Pi firmware boot delay (config.txt)
     DISABLE_SPLASH = "1"
@@ -108,16 +115,30 @@ local_conf_header:
     BOOT_DELAY_MS = "0"
     DISABLE_RPI_BOOT_LOGO = "1"
 
-    # Force max CPU clock permanently + disable all unused hardware probes
-    RPI_EXTRA_CONFIG = " \
+    # Suppress meta-raspberrypi's unsafe single-line append of RPI_EXTRA_CONFIG.
+    # The base rpi-config recipe writes RPI_EXTRA_CONFIG to config.txt via one
+    # `printf`, producing a line far over the BCM2712 firmware's ~80-char
+    # config.txt line limit (see raspberrypi/firmware#1848). Our own rpi-config
+    # bbappend in meta-photon reads PHOTON_EXTRA_CONFIG below and writes each
+    # directive on its own line, which is always boot-safe.
+    RPI_EXTRA_CONFIG = ""
+
+    # Force max CPU clock + disable unused hardware probes. Emitted to config.txt
+    # one directive per line by meta-photon/recipes-bsp/bootfiles/rpi-config_%.bbappend.
+    #
+    # NOTE: restored to exactly the pre-pass-2 directive set after a pass-2 kernel
+    # panic. This matches what used to live in RPI_EXTRA_CONFIG as an 80-char-violating
+    # single line. If the per-line form of exactly these directives also panics, then
+    # the old long-line form was effectively being ignored by the firmware and one of
+    # the directives below is actively hostile when actually parsed — revert the
+    # bbappend entirely in that case.
+    PHOTON_EXTRA_CONFIG = " \
     force_turbo=1 \
     hdmi_force_hotplug=1 \
     usb_max_current_enable=1 \
     camera_auto_detect=0 \
     display_auto_detect=0 \
     dtparam=audio=off \
-    dtparam=i2c=off \
-    dtparam=spi=off \
     disable_poe_fan=1 \
     boot_delay=0 \
     dtparam=act_led_trigger=none \
@@ -125,11 +146,8 @@ local_conf_header:
     disable_fw_kms_setup=1 \
     auto_initramfs=0 \
     force_eeprom_read=0 \
-    hdmi_ignore_cec_init=1 \
-    disable_touchscreen=1 \
-    ignore_lcd=1 \
-    gpu_mem=128 \
-    initial_turbo=30 \
+    disable_overscan=1 \
+    disable_commandline_tags=1 \
     "
 
     # Eliminate U-Boot overhead (Raspberry Pi can boot Linux directly from start.elf) 

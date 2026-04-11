@@ -31,8 +31,20 @@ IMAGE_INSTALL:append = " \
     wpa-supplicant \
     linux-firmware-rpidistro-bcm43455 \
     \
+    systemd-analyze \
+    \
     photon-dashboard \
 "
+
+# rpi-eeprom was added for one-time SPI bootloader config flashing, then
+# removed: the EEPROM config persists in SPI flash on the CM5 module and
+# is unaffected by image reflashes. Keeping the rpi-eeprom package (plus
+# its Python + pycryptodomex runtime chain) in the rootfs just bloats the
+# image ~160MB raw / ~30MB bz2. Re-add to IMAGE_INSTALL temporarily if you
+# ever need to change EEPROM settings again.
+# The meta-photon/recipes-bsp/rpi-eeprom/rpi-eeprom_%.bbappend that widens
+# COMPATIBLE_MACHINE to include raspberrypi-cm5-io-board is kept — it has
+# zero image-size cost and unblocks re-enabling the package later.
 
 # USB HID is typically built into linux-raspberrypi (no kernel-module-usbhid IPK);
 # opkg fails rootfs if IMAGE_INSTALL names a non-existent module package.
