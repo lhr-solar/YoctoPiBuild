@@ -9,15 +9,20 @@ Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 WorkingDirectory=/root
-# Wait for udev to finish processing DRM device events and specifically for
-# /dev/dri/card0 to exist. `udevadm settle` blocks until the udev event
-# queue is empty OR the -E predicate file appears, whichever comes first,
-# capped at 5s. On the CM5 this takes ~300–500ms in practice — far better
-# than the old polling loop (which was hitting its ~2s cap because the char
-# node was not visible to `test -c` at After=systemd-udev-trigger time) and
-# also safer than a naked dev-dri-card0.device dependency, which blocks
-# forever if the DRM udev rules in the image do not TAG+="systemd".
-ExecStartPre=/bin/udevadm settle -t 5 -E /dev/dri/card0
+# Poll for /dev/dri/card0 before launching xinit. On cold boot the vc4 DRM
+# device node is not always ready the instant systemd-udev-trigger.service
+# becomes active — there is a short window where the trigger has fired the
+# events but udev has not yet processed the drm card. Without this wait,
+# xinit opens /dev/dri/card0, gets ENOENT, and exits immediately; systemd
+# retries after RestartSec, which costs ~2 seconds of boot time every
+# cold boot. This loop waits up to 2 seconds (100 * 20ms) and then lets
+# ExecStart run regardless — if the device somehow still is not there,
+# the existing Restart=on-failure + RestartSec fallback catches it so we
+# cannot regress below current behavior.
+#
+# Uses fractional sleep (0.02s = 20ms). Verified available via busybox's
+# CONFIG_FEATURE_FANCY_SLEEP=y in poky scarthgap.
+ExecStartPre=/bin/sh -c 'i=0; while [ ! -c /dev/dri/card0 ] && [ $i -lt 100 ]; do sleep 0.02; i=$((i+1)); done'
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
 RestartSec=2

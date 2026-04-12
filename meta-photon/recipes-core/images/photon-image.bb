@@ -127,16 +127,6 @@ disable_slow_services() {
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
     # WiFi — keep installed but defer off boot path (start manually when needed)
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/wpa_supplicant@wlan0.service
-    # ldconfig regenerates /etc/ld.so.cache. On a read-only embedded rootfs the
-    # cache is already correct from build time. 164ms on the critical chain.
-    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ldconfig.service
-    # sysusers creates system users from /usr/lib/sysusers.d. All accounts are
-    # baked in at image build time so this is pure overhead. 45ms on critical chain.
-    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-sysusers.service
-    # update-done touches /etc/.updated and /var/.updated after package updates
-    # and is what pulls ldconfig into the boot chain in the first place. We do
-    # not do live package updates on this image, so it is unnecessary.
-    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-update-done.service
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "disable_slow_services;"
