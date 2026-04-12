@@ -1,7 +1,6 @@
 [Unit]
 Description=Photon Dashboard
-After=systemd-udev-trigger.service dev-dri-card0.device dev-dri-card1.device
-Wants=dev-dri-card0.device dev-dri-card1.device
+After=systemd-udev-trigger.service
 Conflicts=getty@tty1.service
 DefaultDependencies=no
 
@@ -10,13 +9,15 @@ Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 WorkingDirectory=/root
-# Gate the service on the DRM device units instead of shell-polling for the
-# card0 char node. Empirically the previous polling loop ran ~85 iterations
-# (~1.7s) on cold boot because /dev/dri/card0 was not visible to `test -c`
-# at the moment After=systemd-udev-trigger.service was satisfied, even though
-# vc4 had already registered the device in kernel-space. systemd tracks udev
-# add events natively via dev-dri-*.device units, so After/Wants on them is
-# a proper dependency with no polling and no 2-second worst-case.
+# Wait for udev to finish processing DRM device events and specifically for
+# /dev/dri/card0 to exist. `udevadm settle` blocks until the udev event
+# queue is empty OR the -E predicate file appears, whichever comes first,
+# capped at 5s. On the CM5 this takes ~300–500ms in practice — far better
+# than the old polling loop (which was hitting its ~2s cap because the char
+# node was not visible to `test -c` at After=systemd-udev-trigger time) and
+# also safer than a naked dev-dri-card0.device dependency, which blocks
+# forever if the DRM udev rules in the image do not TAG+="systemd".
+ExecStartPre=/bin/udevadm settle -t 5 -E /dev/dri/card0
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
 RestartSec=2
