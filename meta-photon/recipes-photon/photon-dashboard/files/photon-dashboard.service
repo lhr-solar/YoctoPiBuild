@@ -9,20 +9,18 @@ Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 WorkingDirectory=/root
-# Poll for /dev/dri/card0 before launching xinit. On cold boot the vc4 DRM
-# device node is not always ready the instant systemd-udev-trigger.service
-# becomes active — there is a short window where the trigger has fired the
-# events but udev has not yet processed the drm card. Without this wait,
-# xinit opens /dev/dri/card0, gets ENOENT, and exits immediately; systemd
-# retries after RestartSec, which costs ~2 seconds of boot time every
-# cold boot. This loop waits up to 2 seconds (100 * 20ms) and then lets
-# ExecStart run regardless — if the device somehow still is not there,
-# the existing Restart=on-failure + RestartSec fallback catches it so we
-# cannot regress below current behavior.
+# Wait for /dev/dri/card0 to exist before launching xinit. The old loop used
+# `sleep 0.02` (fractional seconds) which silently no-ops on busybox builds
+# without CONFIG_FEATURE_FANCY_SLEEP — in that case the loop completes in µs
+# and xinit gets ENOENT opening card0, fails, and the service enters a 2s
+# restart cycle that can leave the VT in KD_GRAPHICS with no visible output.
 #
-# Uses fractional sleep (0.02s = 20ms). Verified available via busybox's
-# CONFIG_FEATURE_FANCY_SLEEP=y in poky scarthgap.
-ExecStartPre=/bin/sh -c 'i=0; while [ ! -c /dev/dri/card0 ] && [ $i -lt 100 ]; do sleep 0.02; i=$((i+1)); done'
+# Use udevadm settle instead: part of systemd (always present), blocks until
+# either the udev event queue is empty or /dev/dri/card0 appears, capped at
+# 5s. The leading "-" marks the ExecStartPre as non-fatal, so even if udevadm
+# fails for any reason the service still starts and the Restart=on-failure
+# safety net handles a real device-missing scenario.
+ExecStartPre=-/bin/udevadm settle -t 5 -E /dev/dri/card0
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
 RestartSec=2
