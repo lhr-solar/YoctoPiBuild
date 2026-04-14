@@ -11,7 +11,9 @@ Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aar
 WorkingDirectory=/root
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
-RestartSec=2
+# No explicit RestartSec — systemd default is 100ms. If xinit loses the
+# race to vc4 async probe on cold boot, a fast retry loop gets us to the
+# dashboard in ~200ms instead of 2-4s.
 
 [Install]
 WantedBy=sysinit.target
