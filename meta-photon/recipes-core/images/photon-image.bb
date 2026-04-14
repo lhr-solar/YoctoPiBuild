@@ -179,16 +179,32 @@ setup_tty1_getty() {
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_tty1_getty;"
 
-# Tell Xorg to use the modesetting driver, but let it auto-pick which DRM
-# card to bind to. We previously hardcoded `kmsdev /dev/dri/card0` thinking
-# card0 was always vc4 — on this kernel/dtb combo v3d wins card0 and vc4
-# becomes card1, and the hardcode made Xorg bind to v3d (render-only, no
-# outputs) and fail with "no screens found". Leaving kmsdev unset lets
-# modesetting scan all /dev/dri/card* and pick the one that has CRTCs.
+# Pin Xorg's main Screen to vc4 (/dev/dri/card1) via an explicit
+# Device+Screen+ServerLayout chain. On this kernel/dtb combo v3d wins
+# card0 and vc4 gets card1. Without this config Xorg auto-selects v3d as
+# the primary GPU (it has no CRTCs/outputs), drops vc4 to a secondary
+# PRIME GPU that can't provide a Screen, and fails with "no screens found".
+# The Screen+ServerLayout explicitly names vc4 as the device behind the
+# main screen so it becomes the primary instead of falling back.
 setup_xorg_modesetting() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d
-    printf 'Section "Device"\n    Identifier "Card0"\n    Driver     "modesetting"\nEndSection\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d/10-modesetting.conf
+    cat > ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d/10-modesetting.conf <<'EOF'
+Section "Device"
+    Identifier "vc4"
+    Driver     "modesetting"
+    Option     "kmsdev" "/dev/dri/card1"
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Device     "vc4"
+EndSection
+
+Section "ServerLayout"
+    Identifier "layout0"
+    Screen     "Screen0"
+EndSection
+EOF
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_xorg_modesetting;"
