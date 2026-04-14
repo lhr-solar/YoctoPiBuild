@@ -111,8 +111,7 @@ disable_slow_services() {
     # Avahi (mDNS) — not needed for kiosk
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.socket
-    # USB gadget serial console — not needed
-    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/serial-getty@ttyGS0.service
+    # (USB gadget serial getty@ttyGS0 intentionally left enabled for debug access)
     # Journal flush — delays boot waiting for persistent journal
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-journal-flush.service
     # Login tracking — not needed for kiosk
@@ -121,8 +120,11 @@ disable_slow_services() {
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-tmpfiles-clean.timer
     # SSH daemon — use socket activation instead (starts on first connection)
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/sshd.service
-    # Let xinit own tty1 without login prompt startup or VT handoff races.
-    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
+    # getty@tty1 intentionally left enabled so a login prompt appears on HDMI
+    # whenever photon-dashboard is not running. The dashboard service has
+    # Conflicts=getty@tty1.service so systemd will stop the getty as soon as
+    # the dashboard takes over. When the dashboard fails or is masked you
+    # get a login prompt instead of a black screen.
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/autovt@tty1.service
     # Telephony — not needed
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
@@ -140,6 +142,16 @@ setup_ssh_socket() {
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_ssh_socket;"
+
+# USB-C gadget serial console (ttyGS0) — lets the dev laptop pull a getty shell
+# over the same USB-C cable used for rpiboot. Requires dtoverlay=dwc2 (set in
+# kas.yml PHOTON_EXTRA_CONFIG) and the g_serial module auto-loaded at boot.
+setup_usb_gadget_serial() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/modules-load.d
+    echo "g_serial" > ${IMAGE_ROOTFS}${sysconfdir}/modules-load.d/usb-gadget-serial.conf
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_usb_gadget_serial;"
 
 # Force Xorg to use vc4 display controller (card0) so it explicitly avoids the v3d chip
 setup_xorg_modesetting() {

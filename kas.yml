@@ -148,6 +148,7 @@ local_conf_header:
     force_eeprom_read=0 \
     disable_overscan=1 \
     disable_commandline_tags=1 \
+    dtoverlay=dwc2,dr_mode=peripheral \
     "
 
     # Eliminate U-Boot overhead (Raspberry Pi can boot Linux directly from start.elf) 
