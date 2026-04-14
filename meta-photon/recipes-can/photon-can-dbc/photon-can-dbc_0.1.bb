@@ -20,14 +20,13 @@ do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
 do_install() {
-    install -d ${D}${datadir}/can-dbc/Mcqueen
-    install -m 0644 ${S}/can/dbc/Mcqueen/*.dbc ${D}${datadir}/can-dbc/Mcqueen/
-    # McQueen.mdc is a Vector metadata companion to the DBC set — include it
-    # if the upstream still ships it.
-    if [ -f ${S}/can/dbc/Mcqueen/McQueen.mdc ]; then
-        install -m 0644 ${S}/can/dbc/Mcqueen/McQueen.mdc \
-            ${D}${datadir}/can-dbc/Mcqueen/
-    fi
+    # Install DBCs directly into /root/dbc/ with NO sub-folder. The dashboard
+    # binary (photon::DbcWatcher in photon/engine/photon.cpp) watches the
+    # relative path "dbc" from its CWD, which the systemd unit sets to /root,
+    # and fs::directory_iterator is non-recursive — so the .dbc files must be
+    # direct children of /root/dbc/ or the watcher will not find them.
+    install -d ${D}/root/dbc
+    install -m 0644 ${S}/can/dbc/Mcqueen/*.dbc ${D}/root/dbc/
 }
 
-FILES:${PN} = "${datadir}/can-dbc"
+FILES:${PN} = "/root/dbc"
