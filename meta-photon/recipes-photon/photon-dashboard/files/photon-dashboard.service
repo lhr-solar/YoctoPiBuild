@@ -9,17 +9,6 @@ Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 WorkingDirectory=/root
-# Poll for /dev/dri/card0 directly before launching xinit. `udevadm settle`
-# is NOT equivalent — it waits for the udev *event queue* to drain, and
-# returns as soon as the queue is empty even if vc4's async probe hasn't
-# yet created the card0 device node. Polling on the node itself is the
-# only thing that actually waits for the thing we care about.
-#
-# Uses fractional sleep (0.02s = 20ms). Requires busybox with
-# CONFIG_FEATURE_FANCY_SLEEP=y — confirmed enabled in poky scarthgap.
-# 100 iterations × 20ms = up to 2s, which matches the empirically observed
-# worst-case udev-processing time for card0 on this board.
-ExecStartPre=/bin/sh -c 'i=0; while [ ! -c /dev/dri/card0 ] && [ $i -lt 100 ]; do sleep 0.02; i=$((i+1)); done'
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
 RestartSec=2
