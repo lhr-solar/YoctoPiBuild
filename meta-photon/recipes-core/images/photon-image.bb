@@ -146,12 +146,28 @@ ROOTFS_POSTPROCESS_COMMAND += "setup_ssh_socket;"
 # USB-C gadget serial console (ttyGS0) — lets the dev laptop pull a getty shell
 # over the same USB-C cable used for rpiboot. Requires dtoverlay=dwc2 (set in
 # kas.yml PHOTON_EXTRA_CONFIG) and the g_serial module auto-loaded at boot.
+# Enabling the getty service explicitly is required because systemd's
+# serial-getty-generator only auto-spawns for hardware serial ports listed on
+# the kernel `console=` cmdline, not for USB gadget serial.
 setup_usb_gadget_serial() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/modules-load.d
     echo "g_serial" > ${IMAGE_ROOTFS}${sysconfdir}/modules-load.d/usb-gadget-serial.conf
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty.target.wants
+    ln -sf /lib/systemd/system/serial-getty@.service \
+        ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty.target.wants/serial-getty@ttyGS0.service
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_usb_gadget_serial;"
+
+# Explicitly enable getty on tty1 (the autovt@tty1 mask is still in place to
+# avoid VT race with the dashboard, so we need a direct getty@tty1 instance).
+setup_tty1_getty() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty.target.wants
+    ln -sf /lib/systemd/system/getty@.service \
+        ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty.target.wants/getty@tty1.service
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_tty1_getty;"
 
 # Force Xorg to use vc4 display controller (card0) so it explicitly avoids the v3d chip
 setup_xorg_modesetting() {
