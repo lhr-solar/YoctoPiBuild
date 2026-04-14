@@ -3,9 +3,11 @@ LICENSE = "CLOSED"
 
 # Source: https://github.com/lhr-solar/Photon  branch: driver-dash
 SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=driver-dash;protocol=https"
-# AUTOREV tracks HEAD of driver-dash. For reproducible releases, pin to a specific commit:
-# SRCREV = "abc123..."
-SRCREV = "${AUTOREV}"
+# Pinned to the last driver-dash commit from before tonight's round of dashboard
+# changes (DBC signal renames, one-shot DBC load, pipeline cache path move, async
+# DBC thread). This gets us back to a known-good binary baseline; switch back
+# to AUTOREV once we've confirmed which change broke things.
+SRCREV = "4f46702fd08fc79250a3004f91e94cf4de15b680"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
 
