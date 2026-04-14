@@ -34,6 +34,7 @@ IMAGE_INSTALL:append = " \
     systemd-analyze \
     \
     photon-dashboard \
+    photon-can-dbc \
 "
 
 # rpi-eeprom was added for one-time SPI bootloader config flashing, then
