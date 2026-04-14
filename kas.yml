@@ -93,6 +93,13 @@ local_conf_header:
     # Raspberry Pi GPU memory split (MB allocated to GPU)
     GPU_MEM = "128"
 
+    # CM5 / Pi 5 (BCM2712) needs the -pi5 variant of the vc4 KMS overlay.
+    # Without this meta-raspberrypi's rpi-config emits `dtoverlay=vc4-kms-v3d`
+    # (the generic/Pi 4 overlay) whose DT nodes do not match the BCM2712 HDMI
+    # controller — vc4 never binds, only v3d comes up as card0, Xorg gets
+    # "no screens found", and the dashboard boots to a black screen.
+    VC4DTBO = "vc4-kms-v3d-pi5"
+
     # Extra image space (KB) — ~64MB instead of 256MB to shrink image size
     IMAGE_ROOTFS_EXTRA_SPACE = "65536"
     
