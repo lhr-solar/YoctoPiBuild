@@ -3,6 +3,10 @@ Description=Photon Dashboard
 After=systemd-udev-trigger.service
 Conflicts=getty@tty1.service
 DefaultDependencies=no
+# Widen the start-limit window so a short retry interval doesn't blow
+# through systemd's 5-restarts-in-10s gate and permanently fail the unit.
+StartLimitBurst=20
+StartLimitIntervalSec=30
 
 [Service]
 Type=simple
@@ -11,9 +15,7 @@ Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aar
 WorkingDirectory=/root
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
-# No explicit RestartSec — systemd default is 100ms. If xinit loses the
-# race to vc4 async probe on cold boot, a fast retry loop gets us to the
-# dashboard in ~200ms instead of 2-4s.
+RestartSec=500ms
 
 [Install]
 WantedBy=sysinit.target
