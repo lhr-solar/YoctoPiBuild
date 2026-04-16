@@ -25,9 +25,9 @@
   boom u have the image
 
 ## Flash 
-  Launch the rpiboot-CM4-CM5 - Mass Storage Gadget 
-  Wait for it to connect to the eemrc
-  Launch Raspberry Pi Imager
-  Select cm5 and then the image we have from our desktop
+  Launch the rpiboot-CM4-CM5 - Mass Storage Gadget \
+  Wait for it to connect to the eemrc\
+  Launch Raspberry Pi Imager\
+  Select cm5 and then the image we have from our desktop\
   Just flash then.
   
