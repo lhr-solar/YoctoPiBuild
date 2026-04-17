@@ -29,6 +29,7 @@ DEPENDS = " \
     vulkan-loader \
     vulkan-headers \
     v4l-utils \
+    jpeg \
 "
 
 # Platform flags: non-Windows path sets VK_USE_PLATFORM_XCB_KHR automatically
