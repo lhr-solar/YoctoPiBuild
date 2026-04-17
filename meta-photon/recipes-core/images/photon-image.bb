@@ -179,30 +179,19 @@ setup_tty1_getty() {
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_tty1_getty;"
 
-# Pin Xorg's main Screen to vc4 (/dev/dri/card1) via an explicit
-# Device+Screen+ServerLayout chain. On this kernel/dtb combo v3d wins
-# card0 and vc4 gets card1. Without this config Xorg auto-selects v3d as
-# the primary GPU (it has no CRTCs/outputs), drops vc4 to a secondary
-# PRIME GPU that can't provide a Screen, and fails with "no screens found".
-# The Screen+ServerLayout explicitly names vc4 as the device behind the
-# main screen so it becomes the primary instead of falling back.
+# Match Xorg to vc4 by driver name, not card number. The Pi exposes two DRM
+# devices (vc4 = display, v3d = render-only) and their card0/card1 ordering
+# can flip between kernels. MatchDriver binds this OutputClass to whichever
+# /dev/dri/card* is the vc4 driver, and PrimaryGPU forces it as primary so
+# Xorg does not auto-elect v3d (which has no CRTCs -> "no screens found").
 setup_xorg_modesetting() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d
     cat > ${IMAGE_ROOTFS}${sysconfdir}/X11/xorg.conf.d/10-modesetting.conf <<'EOF'
-Section "Device"
+Section "OutputClass"
     Identifier "vc4"
-    Driver     "modesetting"
-    Option     "kmsdev" "/dev/dri/card1"
-EndSection
-
-Section "Screen"
-    Identifier "Screen0"
-    Device     "vc4"
-EndSection
-
-Section "ServerLayout"
-    Identifier "layout0"
-    Screen     "Screen0"
+    MatchDriver "vc4"
+    Driver "modesetting"
+    Option "PrimaryGPU" "true"
 EndSection
 EOF
 }
