@@ -47,6 +47,7 @@ SRC_URI += " \
     file://photon-dashboard.service \
     file://xinitrc \
     file://photon-init.sh \
+    file://50-photon-cams.rules \
 "
 
 
@@ -72,6 +73,11 @@ do_install() {
     # Custom fast-init script (kernel boots with init=/opt/photon-init.sh)
     install -d ${D}/opt
     install -m 0755 ${WORKDIR}/photon-init.sh ${D}/opt/photon-init.sh
+
+    # udev rule: stable /dev/cam-{left,right,rear} symlinks per USB port
+    install -d ${D}${sysconfdir}/udev/rules.d
+    install -m 0644 ${WORKDIR}/50-photon-cams.rules \
+        ${D}${sysconfdir}/udev/rules.d/
 }
 
 FILES:${PN} += " \
@@ -80,6 +86,7 @@ FILES:${PN} += " \
     ${systemd_system_unitdir}/photon-dashboard.service \
     /root/.xinitrc \
     /opt/photon-init.sh \
+    ${sysconfdir}/udev/rules.d/50-photon-cams.rules \
 "
 
 # NOTE: glslang-native may not exist in meta-oe scarthgap.

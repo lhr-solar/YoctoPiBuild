@@ -1,0 +1,8 @@
+# Stable symlinks for the three dashboard cameras. Map by physical USB port
+# path (KERNELS), not by /dev/videoN which shifts across enumeration. Only the
+# capture node (index=0) gets a symlink -- UVC metadata nodes are skipped.
+#
+# Physical USB port -> logical camera. Swap cables if left/right/rear are wrong.
+SUBSYSTEM=="video4linux", KERNELS=="1-1.1", ATTR{index}=="0", SYMLINK+="cam-left"
+SUBSYSTEM=="video4linux", KERNELS=="1-1.2", ATTR{index}=="0", SYMLINK+="cam-right"
+SUBSYSTEM=="video4linux", KERNELS=="1-1.3", ATTR{index}=="0", SYMLINK+="cam-rear"
