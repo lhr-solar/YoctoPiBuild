@@ -87,8 +87,9 @@ local_conf_header:
     # Enable V4L2 kernel camera support
     KERNEL_EXTRA_FEATURES:append = " features/media/media.cfg"
 
-    # Accept restricted licenses for Raspberry Pi firmware
-    LICENSE_FLAGS_ACCEPTED:append = " synaptics-killswitch"
+    # Accept restricted licenses for Raspberry Pi firmware (synaptics) and
+    # patented codecs in ffmpeg (commercial) needed for H.264 camera decode.
+    LICENSE_FLAGS_ACCEPTED:append = " synaptics-killswitch commercial"
 
     # Raspberry Pi GPU memory split (MB allocated to GPU)
     GPU_MEM = "128"
