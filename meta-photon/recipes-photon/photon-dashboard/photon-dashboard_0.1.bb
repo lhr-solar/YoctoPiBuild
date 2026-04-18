@@ -30,7 +30,11 @@ DEPENDS = " \
     vulkan-headers \
     v4l-utils \
     jpeg \
+    ffmpeg \
 "
+
+# ffmpeg has a non-standard license; opt in.
+LICENSE_FLAGS = "commercial"
 
 # Platform flags: non-Windows path sets VK_USE_PLATFORM_XCB_KHR automatically
 # in root CMakeLists.txt (checked via if(NOT WIN32)), so no extra flag needed.
