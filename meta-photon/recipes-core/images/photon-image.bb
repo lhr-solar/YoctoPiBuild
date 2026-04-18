@@ -66,10 +66,12 @@ ethernet_static_ip() {
 
 ROOTFS_POSTPROCESS_COMMAND += "ethernet_static_ip;"
 
-# Bring up the MCP2515 CAN interface at 250 kbps (car bus rate) on boot.
+# Bring up the MCP2515 CAN interface at 250 kbps (car bus rate) on boot, with
+# auto-restart 100ms after BUS-OFF so a transient bus glitch or a missing ack
+# doesn't leave the interface stuck.
 setup_can0() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
-    printf '[Match]\nName=can0\n\n[CAN]\nBitRate=250K\n' \
+    printf '[Match]\nName=can0\n\n[CAN]\nBitRate=250K\nRestartSec=100ms\n' \
         > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/40-can0.network
 }
 
