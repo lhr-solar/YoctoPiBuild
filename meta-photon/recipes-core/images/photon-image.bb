@@ -66,6 +66,15 @@ ethernet_static_ip() {
 
 ROOTFS_POSTPROCESS_COMMAND += "ethernet_static_ip;"
 
+# Bring up the MCP2515 CAN interface at 500 kbps on boot.
+setup_can0() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
+    printf '[Match]\nName=can0\n\n[CAN]\nBitRate=500K\n' \
+        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/40-can0.network
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "setup_can0;"
+
 
 setup_wifi() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant
