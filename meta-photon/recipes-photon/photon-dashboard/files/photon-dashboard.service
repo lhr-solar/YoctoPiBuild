@@ -12,6 +12,13 @@ StartLimitIntervalSec=30
 Type=simple
 User=root
 Environment=DISPLAY=:0 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
+# LD_BIND_NOW: resolve all symbols at load (one-time cost) so first-frame draws
+# don't pay relocation latency. With page-cache prewarm + mlock this is net win.
+# MALLOC_ARENA_MAX: glibc defaults to 8*ncpu arenas; 2 is plenty for the
+# dashboard and shaves ~1MB RSS + a chunk of init.
+# MESA_NO_ERROR: bypass the validation layer in v3dv (we ship a Release build).
+# vblank_mode=0: don't sync the boot frame to the panel's first vsync.
+Environment=LD_BIND_NOW=1 MALLOC_ARENA_MAX=2 MESA_NO_ERROR=1 vblank_mode=0
 WorkingDirectory=/root
 ExecStart=/usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms
 Restart=on-failure
