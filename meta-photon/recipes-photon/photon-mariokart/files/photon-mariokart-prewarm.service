@@ -1,0 +1,16 @@
+[Unit]
+Description=Prewarm SMK binary and assets into page cache for fast launch
+After=photon-dashboard.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Nice=15
+IOSchedulingClass=idle
+ExecStart=/bin/sh -c '\
+    find /opt/super-mario-kart -type f -print0 | \
+    xargs -0 -n 1 cat > /dev/null 2>&1 || true'
+
+[Install]
+WantedBy=multi-user.target

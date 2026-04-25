@@ -14,12 +14,16 @@ SRC_URI = " \
     file://0001-add-cross-platform-cmakelists.patch \
     file://0002-cxx17-portability-fixes.patch \
     file://0003-ipc-input-udp-listener.patch \
+    file://photon-mariokart-prewarm.service \
 "
 SRCREV = "${AUTOREV}"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
 
-inherit cmake pkgconfig
+inherit cmake pkgconfig systemd
+
+SYSTEMD_SERVICE:${PN} = "photon-mariokart-prewarm.service"
+SYSTEMD_AUTO_ENABLE = "enable"
 
 # CMakeLists lives under src/ in the upstream repo.
 OECMAKE_SOURCEPATH = "${S}/src"
@@ -27,20 +31,36 @@ OECMAKE_SOURCEPATH = "${S}/src"
 DEPENDS = " \
     cmake-native \
     sfml \
-    libgl \
+    virtual/libgl \
     openal-soft \
 "
 
 EXTRA_OECMAKE = " \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
 "
+
+# Strip release binary aggressively.
+TARGET_CFLAGS:append   = " -ffunction-sections -fdata-sections -O3"
+TARGET_CXXFLAGS:append = " -ffunction-sections -fdata-sections -O3"
+TARGET_LDFLAGS:append  = " -Wl,--gc-sections -Wl,-s"
+
+# rm_work safe; only one binary, small asset tree.
+INSANE_SKIP:${PN} += "ldflags"
 
 # CMakeLists install rules already place the binary under /opt/super-mario-kart/
 # and copy the assets/ tree there. PHOTON_SMK_DIR in photon-dashboard defaults
 # to that path, so no extra config is needed.
+do_install:append() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/photon-mariokart-prewarm.service \
+        ${D}${systemd_system_unitdir}/
+}
+
 FILES:${PN} += " \
     /opt/super-mario-kart \
     /opt/super-mario-kart/assets \
+    ${systemd_system_unitdir}/photon-mariokart-prewarm.service \
 "
 
 # Photon dashboard pulls this in as a runtime dependency so launching the

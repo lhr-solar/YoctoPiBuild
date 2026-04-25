@@ -25,6 +25,22 @@ index 5b669bd..ffdd810 100644
  #include <string>
  
  namespace Color {
+diff --git a/src/states/initload.cpp b/src/states/initload.cpp
+index 398c426..5ffd8db 100644
+--- a/src/states/initload.cpp
++++ b/src/states/initload.cpp
+@@ -2,8 +2,9 @@
+ 
+ sf::Texture StateInitLoad::shadowTexture;
+ 
+-const sf::Time StateInitLoad::DING_TIME = sf::seconds(0.75f);
+-const sf::Time StateInitLoad::END_TIME = sf::seconds(2.0f);
++// Photon kiosk: skip the Nintendo splash for fast launch.
++const sf::Time StateInitLoad::DING_TIME = sf::seconds(0.0f);
++const sf::Time StateInitLoad::END_TIME = sf::seconds(0.05f);
+ 
+ void StateInitLoad::loadAllGameTextures() {
+     // Floor objects
 diff --git a/src/states/racemanager.cpp b/src/states/racemanager.cpp
 index 915bbf0..aa1f729 100644
 --- a/src/states/racemanager.cpp
