@@ -152,6 +152,9 @@ disable_slow_services() {
     # and is what pulls ldconfig into the boot chain. We do not do live package
     # updates, so it is unnecessary.
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-update-done.service
+    # systemd-resolved: 163ms on the critical chain. Kiosk has no boot-time DNS
+    # need; resolv.conf via networkd's stub is enough for later WiFi browsing.
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-resolved.service
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "disable_slow_services;"

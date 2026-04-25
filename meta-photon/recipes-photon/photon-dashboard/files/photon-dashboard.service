@@ -1,6 +1,7 @@
 [Unit]
 Description=Photon Dashboard
-After=systemd-udev-trigger.service
+# No After= on udev-trigger: the dashboard's photon-init.sh already polls
+# /dev/dri/card0 directly, so coldplug doesn't need to finish before X starts.
 Conflicts=getty@tty1.service
 DefaultDependencies=no
 # Widen the start-limit window so a short retry interval doesn't blow
