@@ -26,7 +26,7 @@ do_install() {
     # and fs::directory_iterator is non-recursive — so the .dbc files must be
     # direct children of /root/dbc/ or the watcher will not find them.
     install -d ${D}/root/dbc
-    install -m 0644 ${S}/can/dbc/Mcqueen/*.dbc ${D}/root/dbc/
+    install -m 0644 ${S}/can/dbc/HighNoon/*.dbc ${D}/root/dbc/
 }
 
 FILES:${PN} = "/root/dbc"
