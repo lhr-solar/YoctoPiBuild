@@ -35,6 +35,7 @@ IMAGE_INSTALL:append = " \
     \
     photon-dashboard \
     photon-can-dbc \
+    photon-mariokart \
 "
 
 # rpi-eeprom was added for one-time SPI bootloader config flashing, then

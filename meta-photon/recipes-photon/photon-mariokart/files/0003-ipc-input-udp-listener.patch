@@ -1,0 +1,194 @@
+diff --git a/src/input/ipc_input.cpp b/src/input/ipc_input.cpp
+new file mode 100644
+index 0000000..dd3ab65
+--- /dev/null
++++ b/src/input/ipc_input.cpp
+@@ -0,0 +1,99 @@
++#include "ipc_input.h"
++
++#include <chrono>
++#include <thread>
++
++#ifdef _WIN32
++#define WIN32_LEAN_AND_MEAN
++#include <winsock2.h>
++#include <ws2tcpip.h>
++#pragma comment(lib, "ws2_32.lib")
++using socklen_t = int;
++#else
++#include <arpa/inet.h>
++#include <netinet/in.h>
++#include <sys/socket.h>
++#include <unistd.h>
++#define closesocket(s) ::close(s)
++#endif
++
++namespace IpcInput {
++
++std::atomic<float> g_steering{0.0f};
++std::atomic<float> g_throttle{0.0f};
++std::atomic<float> g_brake{0.0f};
++std::atomic<float> g_drift{0.0f};
++std::atomic<bool>  g_active{false};
++
++static std::thread s_thread;
++static std::atomic<bool> s_run{false};
++
++constexpr uint16_t PORT = 48655;
++constexpr int STALE_MS = 250;  // mark inactive if no packet in this window
++
++static void listenLoop() {
++#ifdef _WIN32
++    WSADATA wsa;
++    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return;
++#endif
++
++    int sock = (int)socket(AF_INET, SOCK_DGRAM, 0);
++    if (sock < 0) return;
++
++    sockaddr_in addr{};
++    addr.sin_family = AF_INET;
++    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    addr.sin_port = htons(PORT);
++    if (bind(sock, (sockaddr*)&addr, sizeof(addr)) < 0) {
++        closesocket(sock);
++        return;
++    }
++
++    // Non-blocking with a short timeout so we can detect staleness.
++#ifdef _WIN32
++    DWORD tv = 100;
++    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
++#else
++    timeval tv{0, 100000};
++    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
++#endif
++
++    auto lastPacket = std::chrono::steady_clock::now();
++
++    while (s_run.load()) {
++        float buf[4] = {0.0f, 0.0f, 0.0f, 0.0f};
++        sockaddr_in from{};
++        socklen_t fromLen = sizeof(from);
++        int n = recvfrom(sock, (char*)buf, sizeof(buf), 0, (sockaddr*)&from, &fromLen);
++        auto now = std::chrono::steady_clock::now();
++
++        if (n == (int)sizeof(buf)) {
++            g_steering.store(buf[0]);
++            g_throttle.store(buf[1]);
++            g_brake.store(buf[2]);
++            g_drift.store(buf[3]);
++            g_active.store(true);
++            lastPacket = now;
++        } else {
++            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastPacket).count();
++            if (ms > STALE_MS) g_active.store(false);
++        }
++    }
++
++    closesocket(sock);
++#ifdef _WIN32
++    WSACleanup();
++#endif
++}
++
++void start() {
++    if (s_run.exchange(true)) return;
++    s_thread = std::thread(listenLoop);
++}
++
++void stop() {
++    if (!s_run.exchange(false)) return;
++    if (s_thread.joinable()) s_thread.join();
++}
++
++} // namespace IpcInput
+diff --git a/src/input/ipc_input.h b/src/input/ipc_input.h
+new file mode 100644
+index 0000000..39fcbe2
+--- /dev/null
++++ b/src/input/ipc_input.h
+@@ -0,0 +1,32 @@
++#pragma once
++
++#include <atomic>
++
++// External input source populated by a background UDP listener.
++// Photon dashboard pushes packets of 4 little-endian floats:
++//   steering [-1, +1]   (negative = left)
++//   throttle [ 0, +1]
++//   brake    [ 0, +1]
++//   drift    [ 0, +1]
++// to 127.0.0.1:48655 at ~60 Hz.
++namespace IpcInput {
++
++extern std::atomic<float> g_steering;
++extern std::atomic<float> g_throttle;
++extern std::atomic<float> g_brake;
++extern std::atomic<float> g_drift;
++extern std::atomic<bool>  g_active;   // true while a recent packet has been received
++
++// Deadband for converting analog steering/throttle/brake into virtual key presses.
++constexpr float DEADBAND = 0.10f;
++
++void start();
++void stop();
++
++inline bool turnLeftHeld()  { return g_active.load() && g_steering.load() < -DEADBAND; }
++inline bool turnRightHeld() { return g_active.load() && g_steering.load() > +DEADBAND; }
++inline bool acceleratHeld() { return g_active.load() && g_throttle.load() > DEADBAND; }
++inline bool brakeHeld()     { return g_active.load() && g_brake.load()    > DEADBAND; }
++inline bool driftHeld()     { return g_active.load() && g_drift.load()    > 0.5f; }
++
++} // namespace IpcInput
+diff --git a/src/input/input.h b/src/input/input.h
+index 4ec8945..0bac087 100644
+--- a/src/input/input.h
++++ b/src/input/input.h
+@@ -2,6 +2,8 @@
+ 
+ #include <SFML/Graphics.hpp>
+ 
++#include "input/ipc_input.h"
++
+ enum class Key : int {
+     // Driving actions
+     ACCELERATE,
+@@ -55,6 +57,17 @@ class Input {
+                event.key.code == get(action);
+     }
+     static inline bool held(const Key action) {
++        // CAN-driven driving controls when an IPC source is active.
++        if (IpcInput::g_active.load()) {
++            switch (action) {
++                case Key::TURN_LEFT:  if (IpcInput::turnLeftHeld())  return true; break;
++                case Key::TURN_RIGHT: if (IpcInput::turnRightHeld()) return true; break;
++                case Key::ACCELERATE: if (IpcInput::acceleratHeld()) return true; break;
++                case Key::BRAKE:      if (IpcInput::brakeHeld())     return true; break;
++                case Key::DRIFT:      if (IpcInput::driftHeld())     return true; break;
++                default: break;
++            }
++        }
+         return sf::Keyboard::isKeyPressed(get(action)) &&
+                instance.gameWindow->hasFocus();
+     }
+diff --git a/src/main.cpp b/src/main.cpp
+index c469976..62949c1 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -3,11 +3,14 @@
+ 
+ #include "entities/enums.h"
+ #include "game.h"
++#include "input/ipc_input.h"
+ 
+ int main() {
+ #ifndef DEBUG
+     srand(time(0));
+ #endif
++    IpcInput::start();
+     Game game(BASIC_WIDTH / 2.0f, BASIC_HEIGHT / 2.0f, 60);
+     game.run();
++    IpcInput::stop();
+ }
+\ No newline at end of file

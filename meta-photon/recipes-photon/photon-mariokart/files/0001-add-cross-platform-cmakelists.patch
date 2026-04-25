@@ -1,0 +1,83 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+new file mode 100644
+index 0000000..f3bac2b
+--- /dev/null
++++ b/src/CMakeLists.txt
+@@ -0,0 +1,77 @@
++cmake_minimum_required(VERSION 3.16)
++project(super_mario_kart CXX)
++
++set(CMAKE_CXX_STANDARD 17)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++
++file(GLOB_RECURSE SMK_SOURCES CONFIGURE_DEPENDS
++    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
++list(FILTER SMK_SOURCES EXCLUDE REGEX "/build/")
++list(FILTER SMK_SOURCES EXCLUDE REGEX "CMakeCXXCompilerId\\.cpp$")
++
++if(WIN32)
++    add_executable(super_mario_kart WIN32 ${SMK_SOURCES})
++else()
++    add_executable(super_mario_kart ${SMK_SOURCES})
++endif()
++
++target_include_directories(super_mario_kart PRIVATE
++    "${CMAKE_CURRENT_SOURCE_DIR}")
++
++if(MSVC)
++    target_compile_options(super_mario_kart PRIVATE /W3 /wd4244 /wd4267 /wd4305 /wd4018 /wd4101 /wd4146)
++    target_compile_definitions(super_mario_kart PRIVATE
++        _CRT_SECURE_NO_WARNINGS
++        NOMINMAX
++        _USE_MATH_DEFINES
++        _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
++endif()
++
++# ----------------------------------------------------------------------------
++# SFML
++# ----------------------------------------------------------------------------
++if(WIN32)
++    # Hardcoded SFML SDK on Windows dev box.
++    if(NOT DEFINED SFML_DIR_HINT)
++        set(SFML_DIR_HINT "C:/Users/alper/SFML-2.5.1")
++    endif()
++    set(SFML_INCLUDE_DIR "${SFML_DIR_HINT}/include")
++    set(SFML_LIB_DIR     "${SFML_DIR_HINT}/lib")
++    set(SFML_BIN_DIR     "${SFML_DIR_HINT}/bin")
++
++    target_include_directories(super_mario_kart PRIVATE "${SFML_INCLUDE_DIR}")
++
++    set(SFML_LIBS_RELEASE sfml-graphics sfml-window sfml-system sfml-audio sfml-main)
++    set(SFML_LIBS_DEBUG   sfml-graphics-d sfml-window-d sfml-system-d sfml-audio-d sfml-main-d)
++    foreach(lib ${SFML_LIBS_RELEASE})
++        target_link_libraries(super_mario_kart PRIVATE optimized "${SFML_LIB_DIR}/${lib}.lib")
++    endforeach()
++    foreach(lib ${SFML_LIBS_DEBUG})
++        target_link_libraries(super_mario_kart PRIVATE debug     "${SFML_LIB_DIR}/${lib}.lib")
++    endforeach()
++    target_link_libraries(super_mario_kart PRIVATE opengl32 winmm gdi32 ws2_32)
++
++    set_target_properties(super_mario_kart PROPERTIES
++        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
++
++    # Copy SFML DLLs next to the exe.
++    add_custom_command(TARGET super_mario_kart POST_BUILD
++        COMMAND ${CMAKE_COMMAND} -E copy_directory
++            "${SFML_BIN_DIR}" "$<TARGET_FILE_DIR:super_mario_kart>")
++else()
++    # Linux / Yocto: rely on system / sysroot SFML.
++    find_package(SFML 2 REQUIRED COMPONENTS graphics window system audio)
++    target_link_libraries(super_mario_kart PRIVATE
++        sfml-graphics sfml-window sfml-system sfml-audio
++        pthread)
++endif()
++
++# ----------------------------------------------------------------------------
++# Install (Linux / Yocto)
++# ----------------------------------------------------------------------------
++include(GNUInstallDirs)
++if(NOT WIN32)
++    install(TARGETS super_mario_kart RUNTIME DESTINATION /opt/super-mario-kart)
++    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../assets"
++            DESTINATION /opt/super-mario-kart)
++endif()

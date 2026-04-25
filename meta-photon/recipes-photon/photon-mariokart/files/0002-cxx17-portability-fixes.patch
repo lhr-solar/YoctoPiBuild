@@ -1,0 +1,50 @@
+diff --git a/src/entities/driver.cpp b/src/entities/driver.cpp
+index d010eb2..90a2508 100644
+--- a/src/entities/driver.cpp
++++ b/src/entities/driver.cpp
+@@ -9,10 +9,6 @@
+ 
+ sf::Time StateRace::currentTime;
+ CCOption StateRace::ccOption;
+-const int AIGradientDescent::MAX_DISTANCE_BEHIND[(int)CCOption::__COUNT];
+-const float AIGradientDescent::MIN_PROB_BEHIND[(int)CCOption::__COUNT];
+-const int AIGradientDescent::MAX_DISTANCE_AHEAD[(int)CCOption::__COUNT];
+-const float AIGradientDescent::MIN_PROB_AHEAD[(int)CCOption::__COUNT];
+ DriverPtr Driver::realPlayer;
+ 
+ const sf::Time Driver::SPEED_UP_DURATION = sf::seconds(1.5f);
+diff --git a/src/gui/textutils.h b/src/gui/textutils.h
+index 5b669bd..ffdd810 100644
+--- a/src/gui/textutils.h
++++ b/src/gui/textutils.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include <SFML/Graphics.hpp>
++#include <array>
+ #include <string>
+ 
+ namespace Color {
+diff --git a/src/states/racemanager.cpp b/src/states/racemanager.cpp
+index 915bbf0..aa1f729 100644
+--- a/src/states/racemanager.cpp
++++ b/src/states/racemanager.cpp
+@@ -1,4 +1,6 @@
+ #include "racemanager.h"
++#include <algorithm>
++#include <random>
+ 
+ // #define NO_ANIMATIONS  // remove race begin/end animations from the game
+ 
+@@ -28,7 +30,10 @@ void StateRaceManager::setPlayer() {
+     }
+     // move selected player to last position
+     std::swap(positions[(int)selectedPlayer], positions[count - 1]);
+-    std::random_shuffle(positions.begin(), positions.begin() + (count - 1));
++    {
++        static std::mt19937 g{std::random_device{}()};
++        std::shuffle(positions.begin(), positions.begin() + (count - 1), g);
++    }
+ }
+ 
+ void StateRaceManager::init(const float _speedMultiplier,
