@@ -43,7 +43,7 @@ EXTRA_OECMAKE = " \
 # Strip release binary aggressively.
 TARGET_CFLAGS:append   = " -ffunction-sections -fdata-sections -O3"
 TARGET_CXXFLAGS:append = " -ffunction-sections -fdata-sections -O3"
-TARGET_LDFLAGS:append  = " -Wl,--gc-sections -Wl,-s"
+TARGET_LDFLAGS:append  = " -Wl,--gc-sections"
 
 # rm_work safe; only one binary, small asset tree.
 INSANE_SKIP:${PN} += "ldflags"
