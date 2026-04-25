@@ -3,7 +3,7 @@ DESCRIPTION = "vmbatlle/super-mario-kart with CAN-over-UDP input, spawned by \
 the dashboard when both bottom corners are clicked. Steering wheel, accelerator \
 and brake pedal drive the kart via 127.0.0.1:48655."
 LICENSE = "GPL-3.0-only"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=e62637ea8a114355b985fd86c9ffbd6e"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=1ebbd3e34237af26da5dc08a4e440464"
 
 # Upstream is vmbatlle/super-mario-kart. Our patches (cross-platform CMakeLists,
 # C++17 portability fixes, IPC input layer, std::random_shuffle replacement)
