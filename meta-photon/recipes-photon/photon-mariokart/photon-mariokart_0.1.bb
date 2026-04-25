@@ -46,7 +46,9 @@ TARGET_CXXFLAGS:append = " -ffunction-sections -fdata-sections -O3"
 TARGET_LDFLAGS:append  = " -Wl,--gc-sections"
 
 # rm_work safe; only one binary, small asset tree.
-INSANE_SKIP:${PN} += "ldflags"
+# already-stripped: LTO + --gc-sections leave the binary looking pre-stripped;
+# we don't ship a -dbg package so that's fine.
+INSANE_SKIP:${PN} += "ldflags already-stripped"
 
 # CMakeLists install rules already place the binary under /opt/super-mario-kart/
 # and copy the assets/ tree there. PHOTON_SMK_DIR in photon-dashboard defaults
