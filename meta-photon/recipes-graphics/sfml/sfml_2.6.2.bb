@@ -2,7 +2,7 @@ SUMMARY = "Simple and Fast Multimedia Library"
 DESCRIPTION = "SFML provides a simple interface to system, window, graphics, audio and network."
 HOMEPAGE = "https://www.sfml-dev.org/"
 LICENSE = "Zlib"
-LIC_FILES_CHKSUM = "file://license.md;md5=d9347650fd98cf166891661f5145858e"
+LIC_FILES_CHKSUM = "file://license.md;md5=3ddaca891aa952cf42b3ba95d3b853e7"
 
 SRC_URI = "git://github.com/SFML/SFML.git;branch=2.6.x;protocol=https"
 SRCREV = "5383d2b3948f805af55c9f8a4587ac72ec5981d1"
