@@ -1,19 +1,68 @@
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 new file mode 100644
-index 0000000..f3bac2b
+index 0000000..9038178
 --- /dev/null
 +++ b/src/CMakeLists.txt
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,126 @@
 +cmake_minimum_required(VERSION 3.16)
 +project(super_mario_kart CXX)
 +
 +set(CMAKE_CXX_STANDARD 17)
 +set(CMAKE_CXX_STANDARD_REQUIRED ON)
 +
-+file(GLOB_RECURSE SMK_SOURCES CONFIGURE_DEPENDS
-+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-+list(FILTER SMK_SOURCES EXCLUDE REGEX "/build/")
-+list(FILTER SMK_SOURCES EXCLUDE REGEX "CMakeCXXCompilerId\\.cpp$")
++# Explicit source list. GLOB returns empty under some Yocto build envs.
++set(SMK_SOURCES
++    main.cpp
++    game.cpp
++    settings.cpp
++    ai/gradientdescent.cpp
++    audio/audio.cpp
++    entities/banana.cpp
++    entities/collisionhashmap.cpp
++    entities/driver.cpp
++    entities/driveranimator.cpp
++    entities/effectbreak.cpp
++    entities/effectcoin.cpp
++    entities/effectdrown.cpp
++    entities/effectsparkles.cpp
++    entities/floatingfish.cpp
++    entities/greenshell.cpp
++    entities/item.cpp
++    entities/lakitu.cpp
++    entities/pipe.cpp
++    entities/podium.cpp
++    entities/redshell.cpp
++    entities/thwomp.cpp
++    entities/vehicleproperties.cpp
++    entities/wallobject.cpp
++    gui/effects.cpp
++    gui/endranks.cpp
++    gui/gui.cpp
++    gui/itemIndicator.cpp
++    gui/others.cpp
++    gui/textutils.cpp
++    gui/timer.cpp
++    input/input.cpp
++    input/ipc_input.cpp
++    map/coin.cpp
++    map/floorobject.cpp
++    map/map.cpp
++    map/oilslick.cpp
++    map/questionpanel.cpp
++    map/ramphorizontal.cpp
++    map/rampvertical.cpp
++    map/zipper.cpp
++    states/congratulations.cpp
++    states/gpstandings.cpp
++    states/initload.cpp
++    states/playerselection.cpp
++    states/race.cpp
++    states/racedemo.cpp
++    states/raceend.cpp
++    states/racemanager.cpp
++    states/racepause.cpp
++    states/racestart.cpp
++    states/start.cpp)
 +
 +if(WIN32)
 +    add_executable(super_mario_kart WIN32 ${SMK_SOURCES})
