@@ -28,7 +28,7 @@ IMAGE_INSTALL:append = " \
     can-utils \
     \
     iproute2 \
-    wpa-supplicant \
+    hostapd \
     linux-firmware-rpidistro-bcm43455 \
     \
     systemd-analyze \
@@ -59,6 +59,12 @@ WKS_FILE = "sdimage-raspberrypi.wks"
 # Laptop should use 192.168.1.1/24, Pi will be at 192.168.1.100
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+# Wi-Fi AP used for trackside/debug SSH when there is no trusted LAN.
+PHOTON_AP_SSID ?= "Photon-CM5"
+PHOTON_AP_PSK ?= "photon-dashboard"
+PHOTON_AP_ADDRESS ?= "192.168.4.1/24"
+PHOTON_AP_CHANNEL ?= "6"
+
 ethernet_static_ip() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
     printf '[Match]\nName=eth0\n\n[Network]\nAddress=192.168.1.100/24\nDHCP=yes\n' \
@@ -79,24 +85,68 @@ setup_can0() {
 ROOTFS_POSTPROCESS_COMMAND += "setup_can0;"
 
 
-setup_wifi() {
-    install -d ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant
-    printf 'ctrl_interface=/var/run/wpa_supplicant\nctrl_interface_group=0\nupdate_config=1\ncountry=US\n\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf
-    printf 'network={\n    ssid="Texan-MyCampusNet-2G"\n    psk="Orange-Woodland-50$"\n    key_mgmt=WPA-PSK\n    priority=1\n}\n\n' \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf
+setup_wifi_ap() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/hostapd
+    cat > ${IMAGE_ROOTFS}${sysconfdir}/hostapd/hostapd.conf <<EOF
+country_code=US
+interface=wlan0
+driver=nl80211
+ssid=${PHOTON_AP_SSID}
+hw_mode=g
+channel=${PHOTON_AP_CHANNEL}
+ieee80211n=1
+wmm_enabled=1
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=${PHOTON_AP_PSK}
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+EOF
 
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
-    printf '[Match]\nName=wlan0\n\n[Network]\nDHCP=yes\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/30-wlan0-dhcp.network
+    cat > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/30-wlan0-ap.network <<EOF
+[Match]
+Name=wlan0
 
-    # Keep Wi-Fi available, but let it start later than the early kiosk path.
+[Link]
+RequiredForOnline=no
+
+[Network]
+Address=${PHOTON_AP_ADDRESS}
+ConfigureWithoutCarrier=yes
+DHCPServer=yes
+
+[DHCPServer]
+PoolOffset=20
+PoolSize=80
+EmitDNS=no
+EOF
+
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
+    cat > ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/photon-wifi-ap.service <<'EOF'
+[Unit]
+Description=Photon Wi-Fi access point
+Wants=systemd-networkd.service
+After=systemd-networkd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/hostapd /etc/hostapd/hostapd.conf
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/hostapd.service
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants
-    ln -sf /lib/systemd/system/wpa_supplicant@.service \
-        ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants/wpa_supplicant@wlan0.service
+    ln -sf ${sysconfdir}/systemd/system/photon-wifi-ap.service \
+        ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants/photon-wifi-ap.service
 }
 
-ROOTFS_POSTPROCESS_COMMAND += "setup_wifi;"
+ROOTFS_POSTPROCESS_COMMAND += "setup_wifi_ap;"
 
 disable_suspend() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
@@ -140,7 +190,7 @@ disable_slow_services() {
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/autovt@tty1.service
     # Telephony — not needed
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
-    # WiFi — keep installed but defer off boot path (start manually when needed)
+    # Client Wi-Fi is not used; wlan0 is managed by photon-wifi-ap.service.
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/wpa_supplicant@wlan0.service
     # ldconfig regenerates /etc/ld.so.cache. On a read-only embedded rootfs
     # the cache is already correct from build time. 164ms on the critical chain.
@@ -213,7 +263,7 @@ EOF
 
 ROOTFS_POSTPROCESS_COMMAND += "setup_xorg_modesetting;"
 
-# Disable MAC Randomization so the apartment network allows the connection
+# Keep the journal in RAM; persistent logs are not needed on the kiosk image.
 setup_journald_volatile() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd
     printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=8M\nForwardToSyslog=no\n' \
@@ -228,23 +278,6 @@ setup_persistent_mac() {
         > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/99-default.link
 }
 ROOTFS_POSTPROCESS_COMMAND += "setup_persistent_mac;"
-
-# Pre-configure WiFi so we can SSH immediately after flash
-setup_auto_wifi() {
-    install -d ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant
-    printf 'ctrl_interface=/var/run/wpa_supplicant\nupdate_config=1\nnetwork={\n    ssid="Texan-MyCampusNet-5G"\n    psk="Orange-Woodland-50$"\n}\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf
-    # Ensure systemd auto-starts wlan0
-    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants
-    ln -sf /lib/systemd/system/wpa_supplicant@.service ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/multi-user.target.wants/wpa_supplicant@wlan0.service
-    
-    # Force systemd-networkd to ask for an IPv4 address
-    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
-    printf '[Match]\nName=wlan*\n\n[Network]\nDHCP=ipv4\n' \
-        > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/80-wifi-dhcp.network
-}
-ROOTFS_POSTPROCESS_COMMAND += "setup_auto_wifi;"
-
 
 # Cleanup legacy boot files to shrink image and speed up firmware scanning.
 # Only CM5 specific files are kept.
