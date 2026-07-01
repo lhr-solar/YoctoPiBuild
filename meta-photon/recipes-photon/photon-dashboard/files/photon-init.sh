@@ -25,9 +25,9 @@ export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/broadcom_icd.aarch64.json
 # See photon-dashboard.service for rationale on these flags.
 export LD_BIND_NOW=1 MALLOC_ARENA_MAX=2 MESA_NO_ERROR=1 vblank_mode=0
 
-# Page-cache prewarm: pull DashboardOnly + its libs + font into RAM in the
-# background so xinit/Xorg init runs in parallel with the disk read.
-( cat /usr/bin/DashboardOnly /usr/share/fonts/Satoshi-Medium.ttf > /dev/null 2>&1 ) &
+# Page-cache prewarm: pull Photon into RAM in the background so xinit/Xorg
+# init runs in parallel with the disk read.
+( cat /usr/bin/Photon > /dev/null 2>&1 ) &
 
 /usr/bin/xinit /root/.xinitrc -- :0 vt1 -nolisten tcp -nocursor -s 0 -dpms &
 

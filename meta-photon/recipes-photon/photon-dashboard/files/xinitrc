@@ -1,2 +1,3 @@
 #!/bin/sh
-exec /usr/bin/DashboardOnly
+export PHOTON_DASHBOARD=1
+exec /usr/bin/Photon

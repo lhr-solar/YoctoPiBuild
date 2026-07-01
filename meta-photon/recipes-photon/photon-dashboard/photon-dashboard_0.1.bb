@@ -1,24 +1,29 @@
-SUMMARY = "Photon DashboardOnly application"
+SUMMARY = "Photon application (driver dashboard view)"
 LICENSE = "CLOSED"
 
-# Source: https://github.com/lhr-solar/Photon  branch: driver-dash
-SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=driver-dash;protocol=https"
-# AUTOREV tracks HEAD of driver-dash. For reproducible releases, pin to a specific commit:
-# SRCREV = "abc123..."
+# driver-dash is no longer maintained; the dashboard now lives as a tab in
+# the main Photon app on staging, selected at boot via PHOTON_DASHBOARD.
+# Point this at whatever branch/tag carries the merged work once pushed.
+SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=staging;protocol=https"
 SRCREV = "${AUTOREV}"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
 
 inherit cmake systemd
 
-# Confirmed from repo analysis:
-#   - Target name:      DashboardOnly  (built in photon/ subdirectory)
-#   - No CMake -D flags needed; DashboardOnly is always built alongside Photon
+# Updated from repo analysis (staging):
+#   - Target name:      Photon  (built in photon/ subdirectory; no separate
+#     DashboardOnly target anymore — dashboard is a tab, picked via
+#     PHOTON_DASHBOARD env var, see xinitrc)
 #   - No install() directives in CMakeLists.txt — manual install below
 #   - glslangValidator invoked via custom compile_shader() in kernels/CMakeLists.txt
 #   - Python3 used to convert SPIR-V .spv -> C++ headers (spv_to_header.py)
-#   - find_package(XCB REQUIRED) on Linux
+#   - find_package(XCB REQUIRED) and find_package(SDL3) on Linux
 #   - Vulkan found via find_library() -- needs libvulkan.so in sysroot
+#
+# KNOWN GAP: staging requires SDL3, which has no recipe yet in meta-photon or
+# the configured poky/meta-openembedded (scarthgap) layers. This build will
+# not configure until an SDL3 recipe is added (see meta-photon/recipes-graphics).
 
 DEPENDS = " \
     cmake-native \
@@ -26,6 +31,7 @@ DEPENDS = " \
     glslang-native \
     libxcb \
     libx11 \
+    libsdl3 \
     vulkan-loader \
     vulkan-headers \
     v4l-utils \
@@ -53,13 +59,10 @@ SRC_URI += " \
 
 
 do_install() {
-    # Binary is at <build>/photon/DashboardOnly (CMake subdir output)
+    # Binary is at <build>/photon/Photon (CMake subdir output). The dashboard
+    # font (Inter) is embedded in the binary, so no separate font install.
     install -d ${D}/usr/bin
-    install -m 0755 ${B}/photon/DashboardOnly ${D}/usr/bin/DashboardOnly
-
-    # Satoshi font for dashboard UI
-    install -d ${D}/usr/share/fonts
-    install -m 0644 ${S}/fonts/Satoshi-Medium.ttf ${D}/usr/share/fonts/
+    install -m 0755 ${B}/photon/Photon ${D}/usr/bin/Photon
 
     # Systemd unit
     install -d ${D}${systemd_system_unitdir}
@@ -81,8 +84,7 @@ do_install() {
 }
 
 FILES:${PN} += " \
-    /usr/bin/DashboardOnly \
-    /usr/share/fonts/Satoshi-Medium.ttf \
+    /usr/bin/Photon \
     ${systemd_system_unitdir}/photon-dashboard.service \
     /root/.xinitrc \
     /opt/photon-init.sh \
