@@ -5,7 +5,7 @@ LICENSE = "Zlib"
 # on first fetch/build; replace this value with that one.
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=82637ee087dac333d5c34f1bd0e0894d"
 
-SRC_URI = "git://github.com/libsdl-org/SDL.git;tag=release-3.4.0;protocol=https"
+SRC_URI = "git://github.com/libsdl-org/SDL.git;tag=release-3.4.0;branch=main;protocol=https"
 PV = "3.4.0"
 S = "${WORKDIR}/git"
 
