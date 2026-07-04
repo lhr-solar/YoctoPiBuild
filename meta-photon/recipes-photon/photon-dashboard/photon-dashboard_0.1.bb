@@ -60,10 +60,11 @@ SRC_URI += " \
 
 
 do_install() {
-    # Binary is at <build>/photon/Photon (CMake subdir output). The dashboard
-    # font (Inter) is embedded in the binary, so no separate font install.
+    # Binary lands in <build>/bin (CMAKE_RUNTIME_OUTPUT_DIRECTORY in the root
+    # CMakeLists). The dashboard font (Inter) is embedded in the binary, so no
+    # separate font install.
     install -d ${D}/usr/bin
-    install -m 0755 ${B}/photon/Photon ${D}/usr/bin/Photon
+    install -m 0755 ${B}/bin/Photon ${D}/usr/bin/Photon
 
     # Systemd unit
     install -d ${D}${systemd_system_unitdir}
