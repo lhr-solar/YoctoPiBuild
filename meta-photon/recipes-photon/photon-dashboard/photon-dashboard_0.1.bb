@@ -9,7 +9,7 @@ SRCREV = "${AUTOREV}"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
 
-inherit cmake systemd
+inherit cmake pkgconfig systemd
 
 # Updated from repo analysis (staging):
 #   - Target name:      Photon  (built in photon/ subdirectory; no separate
