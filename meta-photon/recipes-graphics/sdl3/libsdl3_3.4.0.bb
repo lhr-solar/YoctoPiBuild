@@ -42,6 +42,7 @@ EXTRA_OECMAKE = " \
 
 FILES:${PN} += " \
     ${libdir}/libSDL3.so.* \
+    ${datadir}/licenses/SDL3 \
 "
 
 FILES:${PN}-dev += " \
