@@ -44,4 +44,4 @@ if [ $# -ge 1 ]; then
 fi
 
 echo ">>> Copy that installer .sh to wherever you build/deploy Photon from, then run:"
-echo "      Photon/scripts/install-sdk.sh <path-to-installer>.sh"
+echo "      scripts/install-sdk.sh <path-to-installer>.sh"
