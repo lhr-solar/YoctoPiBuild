@@ -4,7 +4,7 @@ LICENSE = "CLOSED"
 # driver-dash is no longer maintained; the dashboard now lives as a tab in
 # the main Photon app on staging, selected at boot via PHOTON_DASHBOARD.
 # Point this at whatever branch/tag carries the merged work once pushed.
-SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=staging;protocol=https"
+SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=dash2staging;protocol=https"
 SRCREV = "${AUTOREV}"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
