@@ -1,9 +1,7 @@
 SUMMARY = "Simple DirectMedia Layer 3 - window/input/Vulkan-surface abstraction"
 HOMEPAGE = "https://www.libsdl.org/"
 LICENSE = "Zlib"
-# Placeholder — unverified. bitbake will report the real md5 of LICENSE.txt
-# on first fetch/build; replace this value with that one.
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=82637ee087dac333d5c34f1bd0e0894d"
+LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=cbf0e3161523f9a9315b6b915c5c4457"
 
 SRC_URI = "git://github.com/libsdl-org/SDL.git;tag=release-3.4.0;branch=main;protocol=https"
 PV = "3.4.0"
