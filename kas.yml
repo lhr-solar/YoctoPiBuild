@@ -60,8 +60,10 @@ local_conf_header:
     # Remove work dirs after each recipe finishes — saves 40-80 GB of disk
     # I/O and storage.  Disable this if you need to inspect build artifacts.
     INHERIT += "rm_work"
-    # Keep work dirs for your own layer so you can debug it easily
-    RM_WORK_EXCLUDE += "photon-image"
+    # Keep work dirs for your own layer so you can debug it easily.
+    # photon-dashboard is kept so photon-deploy.sh can grab the freshly
+    # built binary from ${B}/bin/Photon for over-WiFi updates.
+    RM_WORK_EXCLUDE += "photon-image photon-dashboard"
 
     # Skip generating mirror tarballs (saves time + disk)
     BB_GENERATE_MIRROR_TARBALLS = "0"
