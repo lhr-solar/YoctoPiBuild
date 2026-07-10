@@ -6,11 +6,6 @@ inherit core-image testimage
 PHOTON_IMAGE_FEATURES ?= ""
 IMAGE_FEATURES += " ${PHOTON_IMAGE_FEATURES}"
 
-# Boot splash (psplash, image customized in recipes-core/psplash bbappend).
-# psplash starts right after the rootfs mounts and quits at multi-user, so
-# it covers the userspace gap before the dashboard grabs the display.
-IMAGE_FEATURES += " splash"
-
 # Core packages (stripped for fastest boot)
 IMAGE_INSTALL:append = " \
     packagegroup-core-boot \
