@@ -7,7 +7,7 @@ LICENSE = "CLOSED"
 SRC_URI = "git://github.com/lhr-solar/Photon.git;branch=dash2staging;protocol=https"
 # Keep flash images reproducible. Update this deliberately after validating a
 # dashboard revision on the kart.
-SRCREV = "4e73bbf948ab51e2649b329de659536e089e41bf"
+SRCREV = "3c949a471b6fa798bb08bf16cfd856e4aa1730d4"
 PV = "0.1+git${SRCPV}"
 S = "${WORKDIR}/git"
 
